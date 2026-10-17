@@ -1,0 +1,14 @@
+{
+  "appId": "app.void.notes",
+  "appName": "VOID Notes",
+  "webDir": "www",
+  "backgroundColor": "#000000",
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "style": "DARK",
+      "hidden": false,
+      "initialViewportFitValueHint": "cover"
+    }
+  }
+}
