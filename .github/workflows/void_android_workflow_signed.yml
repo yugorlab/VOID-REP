@@ -5,7 +5,7 @@ on:
       build_type:
         description: 'APK type'
         required: true
-        default: debug
+        default: release
         type: choice
         options:
           - debug
