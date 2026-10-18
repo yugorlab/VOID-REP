@@ -200,6 +200,9 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-tab],[data
 document.addEventListener('input',e=>{const t=e.target,n=activeNote(),r=activeReport();if(t.id==='note-search'){view.query=t.value;updateList();return}if(n&&t.id==='note-title'){n.title=t.value;touch(n);return}if(n&&t.id==='note-body'){n.body=t.value;touch(n);$('#word-count').textContent=`${countWords(n.body)} words`;return}if(t.id==='profile-name'){data.settings.name=t.value;save();return}if(!r)return;if(t.id==='senior-name')r.seniorName=t.value;else if(t.id==='general-notes')r.notes=t.value;else if(t.id==='suggestions')r.suggestions=t.value;else if(t.dataset.volName){const v=r.volunteers.find(x=>x.id===t.dataset.volName);if(v)v.name=t.value}else if(t.dataset.scope){const tasks=t.dataset.scope==='senior'?r.seniorTasks:r.volunteers.find(v=>v.id===t.dataset.vol)?.tasks;if(tasks&&+t.dataset.index<tasks.length)tasks[+t.dataset.index]=t.value}else return;touch(r)});
 document.addEventListener('change',async e=>{const t=e.target,r=activeReport();if(t.id==='report-status'&&r){r.status=t.value;touch(r)}if(t.id==='report-month'&&r){const duplicate=data.reports.find(x=>x.id!==r.id&&x.month===t.value);if(duplicate){notify('A report for that month already exists');t.value=r.month;return}if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(t.value||'')){t.value=r.month;return}r.month=t.value;touch(r);render()}
 if(t.id==='restore-input'){const file=t.files?.[0];if(!file)return;try{const parsed=JSON.parse(await file.text());if(!parsed||!Array.isArray(parsed.notes)||!Array.isArray(parsed.reports)||!parsed.settings||!parsed.version)throw Error('Invalid file');if(!confirm('Restore this backup? It replaces ALL current notes and reports.'))return;const previous=data;data=parsed;if(!save()){data=previous;return}setTab('notes');notify('Backup restored')}catch{notify('Invalid backup file')}finally{t.value=''}}});
+// The home screen should render immediately, before native Android plugin setup.
+// A plugin initialization failure must never leave the main content blank.
+render();
 // Back: inner pages/settings/reports -> Notes; at Notes root press twice to exit.
 // In native Capacitor, use the Android App plugin; PWA/browser has no reliable exit API.
 let lastExitBack=0;
@@ -215,11 +218,16 @@ function handleBack(native=false){
  lastExitBack=t;notify('Press Back again to exit');return false;
 }
 function onBrowserBack(){const exit=handleBack(false);if(!exit)history.pushState({voidGuard:true},'')}
-if(NATIVE_BACK){CAP_APP.addListener('backButton',()=>handleBack(true)).catch(err=>console.error('Android Back listener unavailable',err))}
+if(NATIVE_BACK){
+ try {
+  const registration=CAP_APP.addListener('backButton',()=>handleBack(true));
+  if(registration && typeof registration.catch==='function')
+   registration.catch(err=>console.error('Android Back listener unavailable',err));
+ }catch(err){console.error('Android Back listener unavailable',err)}
+}
 else if(globalThis.history?.pushState){
  try{history.replaceState({voidBase:true},'');history.pushState({voidGuard:true},'');window.addEventListener('popstate',onBrowserBack)}catch(e){console.warn('History Back handling unavailable',e)}
 }
-render();
 })();
 </script>
 </body>
